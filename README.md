@@ -355,6 +355,15 @@ surf select e5 --by label "United States"   # Select by visible text
 surf select e5 --by index 0                 # Select first option
 ```
 
+Upload files:
+
+```bash
+surf upload --ref e5 --files ./report.pdf      # The file input's ref
+surf upload --ref e640 --files ./resume.pdf    # Or the button that opens the file picker
+```
+
+With a button ref, surf clicks it and answers the native file chooser, so a hidden `input[type=file]` doesn't need a ref.
+
 ### Element Inspection
 
 Get computed styles from elements:
