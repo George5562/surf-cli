@@ -2,12 +2,19 @@
 
 ## [Unreleased]
 
+## [2.24.1] - 2026-10-24
+
+### Highlights
+- `surf gemini` now verifies it is really talking to Google before sending your Google login cookies. Earlier versions skipped that check, so someone intercepting your network could have posed as Google and copied them.
+- `surf gemini` works again; every request had been failing with `Header overflow`.
+- A Surf session opened in its own window now stays there instead of moving into the window you are using, so clicks, drags and scroll collection work on it.
+
 ### Fixed
 - **Sessions stay in their own window** - `surf session.ensure <name> <url>` opened a new window, but its tab was then moved into the window you were using, next to your tabs and behind the one you were looking at. Commands that need a visible tab, like `drag`, clicks by coordinates and `collect`, then did nothing. The tab now stays in the session's window. See [#403](https://github.com/nicobailon/surf-cli/issues/403).
 - **`surf gemini` works again** - Every `surf gemini` request failed with `Header overflow`, because gemini.google.com sends more response headers than Node accepts by default. The client now accepts them.
 
 ### Security
-- **`surf gemini` checks Google's HTTPS certificate** - The Gemini client turned off certificate checks on the requests that carry your Google session cookies, so anyone able to intercept your network traffic, such as on public Wi-Fi, could pose as Google and read those cookies. It now rejects a certificate that is self-signed, expired or issued for another host, like any other HTTPS request.
+- **`surf gemini` checks Google's HTTPS certificate** - The Gemini client turned off certificate checks on the requests that carry your Google session cookies, so anyone able to intercept your network traffic, such as on public Wi-Fi, could pose as Google and read those cookies. It now rejects a certificate that is self-signed, expired or issued for another host, like any other HTTPS request. If you ran `surf gemini` on a network you don't trust, sign out of other sessions in your Google Account's security settings to invalidate any copied cookies.
 
 ## [2.24.0] - 2026-10-24
 
