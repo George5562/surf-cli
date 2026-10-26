@@ -19,6 +19,69 @@ surf click e5
 surf snap
 ```
 
+## Fork addition: Jev through OpenRouter
+
+This fork adds an opt-in OpenRouter transport inside Surf's existing semantic
+runtime. TypeSafe remains the default; Clef/Clairic keep their Cloudflare route.
+No external agent loop or additional model call is introduced per decision.
+
+```bash
+# Supply OPENROUTER_API_KEY through your existing secure environment, then:
+SURF_JEV_PROVIDER=openrouter surf semantic.find "the save button" --session research
+SURF_JEV_PROVIDER=openrouter surf semantic.verify "Preferences were saved" --session research
+SURF_JEV_PROVIDER=openrouter surf do --file task.json --session research --allow-semantic
+```
+
+On macOS, you can reuse an existing generic-password Keychain item instead:
+
+```bash
+export SURF_JEV_PROVIDER=openrouter
+export SURF_OPENROUTER_KEYCHAIN_SERVICE=your-existing-service
+export SURF_OPENROUTER_KEYCHAIN_ACCOUNT=your-existing-account
+surf semantic.find "the save button" --session research
+```
+
+`OPENROUTER_API_KEY` takes precedence. Keychain lookup is explicit, macOS-only,
+and reads the named item into process memory without saving a copy, printing it,
+or forwarding it to the Chrome extension/native host. No credential is accepted
+on argv. Existing `semantic auth` commands still manage TypeSafe/Cloudflare only.
+
+The adapter calls `https://openrouter.ai/api/alpha/decisions`, pins
+`typesafe/jev-1.13-20260917`, and rejects a different returned model. Every request
+requires `provider.zdr: true`, denies provider data collection and disables
+provider fallback; there is no automatic direct-TypeSafe fallback. A route unable
+to meet those requirements fails. Requests have Surf's five-second deadline,
+cancellation, no retries, no redirects and bounded response bodies. Surf's
+existing strict answer validation, thresholds, stale-element checks, write
+permissions and call budgets still apply. Page observations are sent to
+OpenRouter and its selected inference provider; use task-appropriate data.
+
+`SURF_JEV_PROVIDER` accepts only `typesafe` (default) or `openrouter`. It affects
+Jev only, including semantic workflows; it does not enable icon vision or typed
+Clairic extraction. Results report `provider: "openrouter"` and retain the exact
+returned model in decision results. The route is pinned to Jev 1.13 to avoid a
+silent model/threshold migration; evaluate actual task accuracy before relying
+on it for writes.
+
+Validation:
+
+```bash
+npx vitest run test/unit/semantic-openrouter.test.ts
+# Optional paid inference on synthetic fixtures; requires configured credentials:
+SURF_REAL_SEMANTIC=1 SURF_JEV_PROVIDER=openrouter npm run eval:semantic -- --models jev-1.13.0 --repeat 1
+```
+
+Live validation on 26 October 2026: all 19 upstream synthetic semantic cases
+passed through OpenRouter with no wrong action selections; median request
+latency by task family was 202–294 ms from one Mac (one repetition, not a
+comparison with direct TypeSafe). A real Chrome synthetic settings page also
+found and executed the guarded Save action, then conservatively stopped as
+uncertain; a separate semantic.verify returned satisfied and direct DOM readback
+confirmed the saved state. No threshold was lowered. Credentials stayed in
+Keychain/process memory. This is bounded evidence, not general website accuracy.
+
+See OpenRouter's [Decisions API](https://openrouter.ai/docs/api/api-reference/alphadecisions/submit-a-decisions-request).
+
 ## Why Surf
 
 Browser automation for AI agents is harder than it looks. Most tools require complex setup, tie you to specific AI providers, or break on real-world pages.

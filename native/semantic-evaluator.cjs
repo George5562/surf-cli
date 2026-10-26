@@ -1,3 +1,4 @@
+const { OPENROUTER_MODEL, createOpenRouterEvaluator, resolveOpenRouterCredential } = require("./semantic-openrouter.cjs");
 const { performance } = require("node:perf_hooks");
 const { SemanticError, extractionModel, semanticModel } = require("./semantic-core.cjs");
 const { resolveCloudflareCredential, resolveTypeSafeCredential } = require("./semantic-credentials.cjs");
@@ -24,6 +25,10 @@ function cloudflareRoute(env, name) {
 function providerEvaluator(provider, model, env, { fetch, loadSdk }) {
   if (provider === "cloudflare") {
     return createCloudflareEvaluator({ ...cloudflareRoute(env, "Clef"), model, fetch });
+  }
+  if (env.SURF_JEV_PROVIDER === "openrouter") {
+    const credential = resolveOpenRouterCredential(env);
+    return createOpenRouterEvaluator({ apiKey: credential.apiKey, fetch });
   }
   const credential = resolveTypeSafeCredential(env);
   if (!credential) {
@@ -55,8 +60,15 @@ function countedEvaluator(provider, model, evaluateProvider, now) {
 }
 
 function createSemanticEvaluator({ model, env = process.env, fetch, loadSdk, now = () => performance.now() }) {
-  const { provider } = semanticModel(model);
-  return countedEvaluator(provider, model, providerEvaluator(provider, model, env, { fetch, loadSdk }), now);
+  let { provider } = semanticModel(model);
+  const route = env.SURF_JEV_PROVIDER?.trim() || "typesafe";
+  if (!["typesafe", "openrouter"].includes(route)) {
+    throw new SemanticError("provider_not_configured", "SURF_JEV_PROVIDER must be typesafe or openrouter");
+  }
+  const routedEnv = { ...env, SURF_JEV_PROVIDER: route };
+  const evaluate = providerEvaluator(provider, model, routedEnv, { fetch, loadSdk });
+  if (provider === "typesafe" && route === "openrouter") provider = "openrouter";
+  return countedEvaluator(provider, provider === "openrouter" ? OPENROUTER_MODEL : model, evaluate, now);
 }
 
 function createExtractionEvaluator({ model, env = process.env, fetch, now = () => performance.now() }) {
