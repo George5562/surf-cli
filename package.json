@@ -1,6 +1,6 @@
 {
   "name": "surf-cli",
-  "version": "2.24.1",
+  "version": "2.25.0",
   "description": "CLI for AI agents to control Chrome. Zero config, agent-agnostic, battle-tested.",
   "keywords": [
     "chrome",
